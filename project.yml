@@ -1,0 +1,188 @@
+# XcodeGen spec for Cloudpane.xcodeproj.
+#
+# The generated project is committed so a fresh clone opens in Xcode with no
+# extra tooling. After editing this file, regenerate and commit both:
+#
+#   xcodegen generate
+#
+# Do not hand-edit Cloudpane.xcodeproj; the next generate will overwrite it.
+#
+# CloudpaneCore is a tagged Swift package fetched from GitHub. See "packages"
+# below for developing against a sibling checkout instead.
+
+name: Cloudpane
+
+options:
+  createIntermediateGroups: true
+  # Sets LastUpgradeCheck and the scheme's LastUpgradeVersion. Bump it with
+  # the recommended settings below when Xcode shows "Update to recommended
+  # settings" after an Xcode upgrade.
+  xcodeVersion: "27.1"
+  deploymentTarget:
+    macOS: "14.0"
+
+settings:
+  base:
+    DEVELOPMENT_TEAM: YA83Q8FTH3
+    CODE_SIGN_STYLE: Automatic
+    PRODUCT_BUNDLE_IDENTIFIER: com.404tools.cloudpane
+    MARKETING_VERSION: "1.0"
+    # Placeholder build number; the "Set Build Number" phase replaces it in
+    # every built app. It must differ from any value a commit without that
+    # phase used, so a reused DerivedData never skips CodeSign. No commit of
+    # this project has ever lacked the phase.
+    CURRENT_PROJECT_VERSION: "0"
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    GENERATE_INFOPLIST_FILE: YES
+    INFOPLIST_KEY_CFBundleDisplayName: Cloudpane
+    INFOPLIST_KEY_NSHumanReadableCopyright: "Copyright © 2026 404 Cybersecurity LLC"
+    INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
+    # Xcode 27.1 recommended settings (its project upgrade check).
+    # The app target sets this to NO for its build-number phase.
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: YES
+    STRING_CATALOG_GENERATE_SYMBOLS: YES
+    DEAD_CODE_STRIPPING: YES
+
+packages:
+  # The tagged package from GitHub, pinned to an exact version.
+  # A Core change ships by tagging a new CloudpaneCore version and bumping exactVersion here.
+  #
+  # To develop against the sibling checkout instead, use these two lines for the time being,
+  # and add "- package: CloudpaneCore/CloudpaneCoreTests" back to the Cloudpane scheme's
+  # testTargets. Don't commit that state.
+  #
+  # CloudpaneCore:
+  #   path: ../CloudpaneCore
+  CloudpaneCore:
+    url: https://github.com/breed007/CloudpaneCore
+    exactVersion: 1.0.0
+
+targets:
+  Cloudpane:
+    type: application
+    platform: macOS
+    sources:
+      - path: Cloudpane
+        excludes:
+          - "PrivacyInfo.xcprivacy"
+          - "AppIcon.icon"
+          - "AppIcon.icon/**"
+      # Icon Composer file. Xcode builds the macOS 14 and 15 fallback from it.
+      - path: Cloudpane/AppIcon.icon
+        type: file
+        buildPhase: resources
+      # Privacy manifest: no tracking and no collected data. It declares file
+      # timestamps (C617.1 for the app's own container, 3B52.1 for folders the
+      # user grants) and user defaults (CA92.1, the app's own settings).
+      - path: Cloudpane/PrivacyInfo.xcprivacy
+        type: file
+        buildPhase: resources
+      # Help pages, straight from docs/help into Resources/help, read by HelpCatalog.
+      # Edit them there; there is no copy step. README.md documents the conventions for
+      # writers and is not a page, so it stays out of the app.
+      - path: docs/help
+        # Only the pages themselves, so a stray folder on disk never joins the project.
+        includes:
+          - "*.md"
+        excludes:
+          - "README.md"
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: help
+    settings:
+      base:
+        PRODUCT_NAME: Cloudpane
+        ENABLE_HARDENED_RUNTIME: YES
+        CODE_SIGN_ENTITLEMENTS: Cloudpane/Cloudpane.entitlements
+        CODE_SIGN_IDENTITY: Apple Development
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # Export compliance: SHA-256 from CryptoKit only compares files; nothing is
+        # encrypted.
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
+        # Off for this target because of the build-number phase below. The
+        # script sandbox lets a phase write only its declared outputs, and
+        # that phase must not declare the Info.plist it stamps. With the
+        # sandbox on, PlistBuddy's save is denied, PlistBuddy still exits 0,
+        # and the app ships as build 0. The phase reads its value back and
+        # fails the build if the write did not take. Decline it if Xcode's
+        # recommended settings check offers YES.
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+    # 404 Tools build numbering: CFBundleVersion is the build time,
+    # YYYYMMDD.HHMM, stamped on every build (Xcode, xcodebuild, archive).
+    # MARKETING_VERSION stays hand-set; CURRENT_PROJECT_VERSION is only the
+    # fallback Xcode shows in the General tab. The phase runs after Xcode
+    # writes the product Info.plist and before code signing, so the signature
+    # covers the stamped value.
+    postBuildScripts:
+      - name: "Set Build Number (YYYYMMDD.HHMM)"
+        # Run on every build, including incremental ones.
+        basedOnDependencyAnalysis: false
+        # Ordering, not decoration. With FUSE_BUILD_PHASES the last phase in
+        # the list does not have to run last. This input makes the script
+        # wait for ProcessInfoPlistFile.
+        inputFiles:
+          - "$(TARGET_BUILD_DIR)/$(INFOPLIST_PATH)"
+        # No outputFiles, on purpose. Declaring the plist as an output makes
+        # the build system stop rechecking it, and a no-change rebuild in a
+        # new minute then skips CodeSign and leaves an app that will not
+        # launch. The script must never exit 0 without writing.
+        script: |
+          set -e
+          buildNumber="$(date +%Y%m%d.%H%M)"
+          # TARGET_BUILD_DIR is the product being signed, on a normal build
+          # and on an archive alike.
+          plist="${TARGET_BUILD_DIR}/${INFOPLIST_PATH}"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${buildNumber}" "${plist}"
+          # PlistBuddy exits 0 even when it cannot save the file, so read the
+          # value back. A build that would ship the placeholder fails here.
+          stamped="$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "${plist}")"
+          if [ "${stamped}" != "${buildNumber}" ]; then
+            echo "error: CFBundleVersion in ${plist} is '${stamped}', expected '${buildNumber}'. The stamp did not take; check that ENABLE_USER_SCRIPT_SANDBOXING is NO for this target." >&2
+            exit 1
+          fi
+          echo "note: stamped CFBundleVersion = ${buildNumber}"
+    dependencies:
+      - package: CloudpaneCore
+    scheme:
+      # CloudpaneCore's own tests run with swift test in its repository; a remote package's
+      # tests cannot run from this scheme.
+      testTargets:
+        - CloudpaneTests
+
+  # App-level tests of the model layer. The test bundle compiles the model sources itself
+  # and runs without a host app, so testing never launches Cloudpane or touches its
+  # container: each test gets its own fake home folder, database and defaults.
+  CloudpaneTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: CloudpaneTests
+      - path: Cloudpane/AppModel.swift
+      - path: Cloudpane/AppModel+M3.swift
+      - path: Cloudpane/AppModel+M4.swift
+      - path: Cloudpane/AppModel+M5.swift
+      - path: Cloudpane/AppModel+Providers.swift
+      - path: Cloudpane/SidebarItem.swift
+      - path: Cloudpane/Help/HelpTopics.swift
+      - path: docs/help
+        # Only the pages themselves, so a stray folder on disk never joins the project.
+        includes:
+          - "*.md"
+        excludes:
+          - "README.md"
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: help
+      - path: Cloudpane/FolderAccess.swift
+      - path: Cloudpane/Theme.swift
+      - path: Cloudpane/ReportPDF.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.404tools.cloudpane.tests
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - package: CloudpaneCore

@@ -1,0 +1,15 @@
+{
+  "originHash" : "a52cd1512b1694223c180b52fe7baba6a1a7e5fd950576c576058a047f2d1e31",
+  "pins" : [
+    {
+      "identity" : "cloudpanecore",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/breed007/CloudpaneCore",
+      "state" : {
+        "revision" : "11724bf86eab225acbd8cab4c151c7e980ac33c0",
+        "version" : "1.0.0"
+      }
+    }
+  ],
+  "version" : 3
+}

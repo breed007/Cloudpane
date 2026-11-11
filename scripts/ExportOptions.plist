@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>method</key>
+	<string>developer-id</string>
+	<key>teamID</key>
+	<string>YA83Q8FTH3</string>
+	<key>signingStyle</key>
+	<string>manual</string>
+	<!-- SHA-1 of "Developer ID Application: 404 Cybersecurity LLC (YA83Q8FTH3)".
+	     The team has a second Developer ID certificate, so the choice is not left
+	     to Xcode. scripts/release.sh carries the same value and checks the result. -->
+	<key>signingCertificate</key>
+	<string>7833623A279DB2E5895C322A78BE1E051AB56B7C</string>
+</dict>
+</plist>

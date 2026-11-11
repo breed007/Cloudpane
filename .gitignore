@@ -1,0 +1,24 @@
+# Xcode and release output
+build/
+dist/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcscmblueprint
+*.moved-aside
+.swiftpm/
+.build/
+Packages/
+
+# macOS
+.DS_Store
+
+# Local
+Spike/RESULTS-local.md
+
+# Secrets and signing (none expected here)
+*.p8
+*.p12
+*.mobileprovision
+*.pem
+.env
